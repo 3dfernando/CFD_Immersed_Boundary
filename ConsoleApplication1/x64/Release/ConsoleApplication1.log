@@ -1,0 +1,24 @@
+﻿  BC_2D.cpp
+BC_2D.cpp(307): warning C4101: 'ddx': unreferenced local variable
+  Plotting.cpp
+Plotting.cpp(141): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+Plotting.cpp(147): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+Plotting.cpp(150): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+Plotting.cpp(153): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+Plotting.cpp(160): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+Plotting.cpp(163): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+Plotting.cpp(166): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+Plotting.cpp(98): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  C:\Program Files (x86)\Windows Kits\10\Include\10.0.15063.0\ucrt\stdio.h(1772): note: see declaration of 'sprintf'
+  Poisson.cpp
+Poisson.cpp(147): warning C4101: 'pMid': unreferenced local variable
+  SolverOperators.cpp
+SolverOperators.cpp(255): warning C4101: 'alphaNum': unreferenced local variable
+SolverOperators.cpp(256): warning C4101: 'betaNum': unreferenced local variable
+SolverOperators.cpp(256): warning C4101: 'betaDen': unreferenced local variable
+  Generating code
+  18 of 49 functions (36.7%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    2 functions had inline decision re-evaluated but remain unchanged
+  Finished generating code
+  ConsoleApplication1.vcxproj -> F:\00 - Files\00 - Personal\21 - PhD\10 - Classes\02 - Major [Fluid Mech]\EML5930 - CFD\03 - Project\Cpp\CFD_Solver_R05\x64\Release\CFDSolver.exe

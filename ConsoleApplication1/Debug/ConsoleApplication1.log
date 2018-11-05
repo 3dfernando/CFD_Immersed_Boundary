@@ -1,0 +1,7 @@
+﻿C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\IDE\VC\VCTargets\Microsoft.CppBuild.targets(387,5): warning MSB8028: The intermediate directory (Debug\) contains files shared from another project (ConsoleApplication1.vcxproj).  This can lead to incorrect clean and rebuild behavior.
+Plotting.obj : error LNK2019: unresolved external symbol __imp__tecini142@32 referenced in function "public: static void __cdecl Plotting::OutputTecplot(double *,double *,double *,int,int)" (?OutputTecplot@Plotting@@SAXPAN00HH@Z)
+Plotting.obj : error LNK2019: unresolved external symbol __imp__teczne142@84 referenced in function "public: static void __cdecl Plotting::OutputTecplot(double *,double *,double *,int,int)" (?OutputTecplot@Plotting@@SAXPAN00HH@Z)
+Plotting.obj : error LNK2019: unresolved external symbol __imp__tecdat142@12 referenced in function "public: static void __cdecl Plotting::OutputTecplot(double *,double *,double *,int,int)" (?OutputTecplot@Plotting@@SAXPAN00HH@Z)
+Plotting.obj : error LNK2019: unresolved external symbol __imp__tecend142@0 referenced in function "public: static void __cdecl Plotting::OutputTecplot(double *,double *,double *,int,int)" (?OutputTecplot@Plotting@@SAXPAN00HH@Z)
+tecio.lib : warning LNK4272: library machine type 'x64' conflicts with target machine type 'X86'
+F:\00 - Files\00 - Personal\21 - PhD\10 - Classes\02 - Major [Fluid Mech]\EML5930 - CFD\03 - Project\Cpp\CFD_Solver\Debug\CFDSolver.exe : fatal error LNK1120: 4 unresolved externals
