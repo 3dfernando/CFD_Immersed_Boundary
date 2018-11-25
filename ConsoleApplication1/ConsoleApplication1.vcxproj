@@ -147,6 +147,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BC_2D.h" />
+    <ClInclude Include="Body.h" />
+    <ClInclude Include="ImmersedBoundaryOperators.h" />
     <ClInclude Include="Plotting.h" />
     <ClInclude Include="Poisson.h" />
     <ClInclude Include="SolverOperators.h" />
@@ -155,7 +157,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BC_2D.cpp" />
+    <ClCompile Include="Body.cpp" />
     <ClCompile Include="CFD_Project.cpp" />
+    <ClCompile Include="ImmersedBoundaryOperators.cpp" />
     <ClCompile Include="Plotting.cpp" />
     <ClCompile Include="Poisson.cpp" />
     <ClCompile Include="SolverOperators.cpp" />

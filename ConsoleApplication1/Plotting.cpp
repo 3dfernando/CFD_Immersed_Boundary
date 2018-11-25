@@ -36,29 +36,44 @@ HBITMAP Plotting::ArrayToBitmap(double *A, int W, int H)
 	Avg = (*maxA + *minA) / 2;
 	Diff = (*maxA - *minA) / 2;
 
-	BYTE* RGB;
-	int nC = 3;
-	RGB = new BYTE[W * H * nC];
+	//Makes array width be a multiple of 4(otherwise bitmap plots improperly for some weird Windows reason)
+	int newW = ceil((double)W / 4) * 4;
 
-	for (int i = 0; i<(W*H); i++) {
-		if (A[i]>Avg) {
-			Level = 255 * (1 - ((A[i] - Avg) / Diff));
-			RGB[nC * i] = (BYTE)Level;
-			RGB[nC * i + 1] = (BYTE)Level;
-			RGB[nC * i + 2] = 255;
-		}
-		else {
-			Level = 255 * (1 - ((Avg - A[i]) / Diff));
-			RGB[nC * i] = 255;
-			RGB[nC * i + 1] = (BYTE)Level;
-			RGB[nC * i + 2] = (BYTE)Level;
+	BYTE* RGB;
+	int nC = 3; //Number of channels
+	int idx, idx2;
+	RGB = new BYTE[newW * H * nC];
+
+	for (int j = 0; j < H; j++) {
+		for (int i = 0; i < newW; i++) {
+			idx = j * newW + i;
+			idx2 = j * W + i;
+			if (i < W) {				
+				if (A[idx2] > Avg) {
+					Level = 255 * (1 - ((A[idx2] - Avg) / Diff));
+					RGB[nC * idx] = (BYTE)Level;
+					RGB[nC * idx + 1] = (BYTE)Level;
+					RGB[nC * idx + 2] = 255;
+				}
+				else {
+					Level = 255 * (1 - ((Avg - A[idx2]) / Diff));
+					RGB[nC * idx] = 255;
+					RGB[nC * idx + 1] = (BYTE)Level;
+					RGB[nC * idx + 2] = (BYTE)Level;
+				}
+			}
+			else {
+				RGB[nC * idx] = 0;
+				RGB[nC * idx + 1] = 0;
+				RGB[nC * idx + 2] = 0;
+			}
 		}
 	}
 
 	
 	BITMAPINFOHEADER bmih;
 	bmih.biSize = sizeof(BITMAPINFOHEADER);
-	bmih.biWidth = W;
+	bmih.biWidth = newW;
 	bmih.biHeight = -H;
 	bmih.biPlanes = 1;
 	bmih.biBitCount = 24;

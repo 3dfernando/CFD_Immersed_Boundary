@@ -2,7 +2,9 @@
 #include "Poisson.h"
 #include "Plotting.h"
 #include "SolverOperators.h"
+#include "ImmersedBoundaryOperators.h"
 #include "BC_2D.h"
+#include "Body.h"
 #include <iostream>
 #include <time.h>
 #include <tchar.h>
@@ -18,6 +20,7 @@ void sleep(int milliseconds);
 #pragma region Variables
 	double dx;
 	double dy;
+	const double pi = 3.14159;
 #pragma endregion
 
 BOOL ctrl_handler(DWORD event)
@@ -40,17 +43,23 @@ int main()
 	double dx = 0.05; //x spacing of grid cells
 	double dy = 0.05; //y spacing of grid cells
 	double dt = 0.01; //time step increment
-	double Re = 200;  //Simulation Reynolds number
+	double Re = 100;  //Simulation Reynolds number
 
-	double reltol = 1e-10; //Relative tolerance to stop CG algorithm
+	double reltol = 1e-6; //Relative tolerance to stop CG algorithm
 
-	int nx = 100; //nx, ny are the number of grid points
-	int ny = 99; //nx different than ny to spot swapping mistakes
+	int nx = 176; //nx, ny are the number of grid points
+	int ny = 120; //nx different than ny to spot swapping mistakes
 	int last_t = 200000; //t is the time step (not the true simulation time).
 	int t_decimation = 10; //Saves a field file only every t_decimation time steps
 
+	double x_CylCenter = dx * (double)nx / 3; //Initializes Cylinder center coordinate and radius
+	double y_CylCenter = dy * (double)ny / 2;
+	double R_Cyl = min(dx * (double)nx, dy * (double)ny) / 12;
+
 	SetConsoleCtrlHandler((PHANDLER_ROUTINE)(ctrl_handler), TRUE); //Kills console window gracefully
 
+	//==========Defines x, y coordinates of the grid =================
+	//================================================================
 	x = new double[nx*ny]; //x coordinate of the cell centers
 	y = new double[nx*ny]; //y coordinate of the cell centers
 	for (int j = 0; j < ny; j++) {
@@ -59,6 +68,45 @@ int main()
 			y[j*nx + i] = ((double)j)*dy + (dy / 2);
 		}
 	}
+
+
+	//==========Initializes x, y coordinates of the cylinder==========
+	//================================================================
+	double ds = min(dx, dy);
+	int ns = (int)round((R_Cyl * 2 * pi) / ds);
+	ds = (R_Cyl * 2 * pi) / (double)ns; //Updates ds with the rounded ns
+
+	double* xCyl; //Inits cyl coords and vels
+	double* yCyl;
+	double* vxCyl;
+	double* vyCyl;
+	double* xForceCyl;
+	double* yForceCyl;
+	xCyl = new double[ns];
+	yCyl = new double[ns];
+	vxCyl = new double[ns];
+	vyCyl = new double[ns];
+	xForceCyl = new double[ns];
+	yForceCyl = new double[ns];
+
+	//For debug
+	/*ns = 1;
+	R_Cyl = 0;//*/
+
+	for (int k = 0; k < ns; k++) {
+		xCyl[k] = x_CylCenter + R_Cyl * cos(((double)k / ns) * 2 * pi);
+		yCyl[k] = y_CylCenter + R_Cyl * sin(((double)k / ns) * 2 * pi);
+		vxCyl[k] = 0;
+		vyCyl[k] = 0;
+		xForceCyl[k] = 0;
+		yForceCyl[k] = 0;
+	}
+
+	Body* Cylinder = new Body(xCyl, yCyl, vxCyl, vyCyl, xForceCyl, yForceCyl, ds, ns);
+
+
+	//==========Initializes values for u and v =================
+	//==========================================================
 
 	double* uOld; //Stores previous time step u, v, P
 	double* vOld;
@@ -93,7 +141,7 @@ int main()
 	for (int j = 0; j < ny; j++) {
 		for (int i = 0; i < nx; i++) {
 			P[j*nx + i] = 0;
-			POld[i] = P[j*nx + i];
+			POld[j*nx + i] = P[j*nx + i];
 		}
 	}
 
@@ -105,7 +153,7 @@ int main()
 
 	double* uTop;	double* uBottom;
 	uTop = new double[nx - 1]; uBottom = new double[nx - 1];
-	for (int i = 0; i < (nx - 1); i++) { uTop[i] = 0; uBottom[i] = 1;}
+	for (int i = 0; i < (nx - 1); i++) { uTop[i] = 0; uBottom[i] = 0;}
 	Boundary->SetVector(BC::VEC_U_TOP, uTop);
 	Boundary->SetVector(BC::VEC_U_BOTTOM, uBottom);
 
@@ -113,22 +161,22 @@ int main()
 	uLeft = new double[ny]; uRight = new double[ny];
 	for (int i = 0; i < ny; i++) {
 		if (i < (ny / 3)) {
-			uLeft[i] = 0;
-			uRight[i] = 0;
+			uLeft[i] = 1;
+			uRight[i] = 1;
 		}
 		else if (i < (2 * ny / 3)) {
-			uLeft[i] = 0;
-			uRight[i] = 0;
+			uLeft[i] = 1;
+			uRight[i] = 1;
 		}
 		else {
-			uLeft[i] = 0;
-			uRight[i] = 0;
+			uLeft[i] = 1;
+			uRight[i] = 1;
 		}
 	}
 	Boundary->SetVector(BC::VEC_U_RIGHT, uRight);
 	Boundary->SetVector(BC::VEC_U_LEFT, uLeft);
 	Boundary->SetKind(BC::VEC_U_LEFT,BC::BC_Dirichlet);
-	Boundary->SetKind(BC::VEC_U_RIGHT, BC::BC_Dirichlet);
+	Boundary->SetKind(BC::VEC_U_RIGHT, BC::BC_Outflow);
 	
 	double* vTop;	double* vBottom;
 	vTop = new double[nx]; vBottom = new double[nx];
@@ -170,12 +218,16 @@ int main()
 	double* Gv;
 	double* D;
 	double* Dbc;
+	double* uInterp;
+	double* vInterp;
 	uStar = new double[(nx - 1)*ny];
 	vStar = new double[nx*(ny - 1)];
 	Gu = new double[nx*ny];
 	Gv = new double[nx*ny];
 	D = new double[nx*ny];
 	Dbc = new double[nx*ny];
+	uInterp = new double[Cylinder->ns];
+	vInterp = new double[Cylinder->ns];
 
 
 	//========================================================================
@@ -194,13 +246,13 @@ int main()
 
 		//Updates the u, v, P plots in console window
 		Bu = Plotting::ArrayToBitmap(u, nx - 1, ny);
-		Plotting::PlotBMP(400, 0, Bu);
+		Plotting::PlotBMP(450, 0, Bu);
 
 		Bv = Plotting::ArrayToBitmap(v, nx, ny - 1);
-		Plotting::PlotBMP(400, ny + 5, Bv);
+		Plotting::PlotBMP(450, ny + 5, Bv);
 
 		Bp = Plotting::ArrayToBitmap(P, nx, ny);
-		Plotting::PlotBMP(400, ny * 2 + 10, Bp);
+		Plotting::PlotBMP(450, ny * 2 + 10, Bp);
 		
 		//Solves Intermediary Velocity v*
 		SolverOperators::SolveIntermVelocity2D(uOld, vOld, u, v, Boundary, uStar, vStar, Re, dx, dy, dt, nx, ny, reltol);
@@ -208,17 +260,20 @@ int main()
 		//Calculates divergence of v*
 		SolverOperators::DivergenceOperator2D(uStar, vStar, D, dx, dy, nx, ny);
 
-		//Adds BC for divergence and divides by delta t
+		//Adds BC for divergence (Don't divide anymore by delta-t as that's done in the Q operator)
 		Boundary->Divergence(Dbc);
 		for (int j = 0; j < ny; j++) {
 			for (int i = 0; i < nx; i++) {
-				D[j*nx + i] = (D[j*nx + i] + Dbc[j*nx + i]) / dt;
+				D[j*nx + i] = D[j*nx + i] + Dbc[j*nx + i];
 			}
 		}
 
+		//Interpolates uStar and vStar to the Lagrangian grid
+		IB_Operators::InterpolationOperator(uStar, vStar, uInterp, vInterp, Cylinder, dx, dy, nx, ny);
+
 		//Solves the Poisson equation
 		//clock_t start = clock(); //Times the routine
-		Poisson::CGPressurePoisson2D(Poisson::LaplacianPressure, POld, D, P, dx, dy, dt, Re, nx, ny, reltol);
+		Poisson::CGModifiedPressurePoisson2D(POld, D, P, Cylinder, uInterp, vInterp, dx, dy, dt, Re, nx, ny, reltol);
 		//clock_t end = clock();
 		//double time = (double)(end - start) / CLOCKS_PER_SEC * 1000.0;
 						
@@ -226,7 +281,7 @@ int main()
 		for (int i = 0; i < nx*ny; i++) { POld[i] = P[i]; } //POld could be removed and save time but potential savings are small
 
 		//Calculates the gradient of P
-		SolverOperators::ProjectionStep(uStar, vStar, u, v, P, Re, dx, dy, dt, nx, ny);
+		SolverOperators::ProjectionStep(uStar, vStar, u, v, P, Cylinder, Re, dx, dy, dt, nx, ny);
 					
 
 		//Moves u and v to uOld and vOld

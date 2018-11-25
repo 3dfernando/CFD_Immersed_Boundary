@@ -23,6 +23,8 @@ double *Gup;
 double *Gvp;
 double *Rup_inv;
 double *Rvp_inv;
+double *Fxp;
+double *Fyp;
 bool Projection_alloc = 0;
 
 //Global variables for ConvectiveOperator
@@ -194,7 +196,7 @@ void SolverOperators::R_Operator_Inv(double *u, double *v, double *res_u, double
 
 }
 
-void SolverOperators::ProjectionStep(double *uStar, double *vStar, double *uNext, double *vNext, double *P, double Re, double dx, double dy, double dt, int nx, int ny) {
+void SolverOperators::ProjectionStep(double *uStar, double *vStar, double *uNext, double *vNext, double *P, Body *B, double Re, double dx, double dy, double dt, int nx, int ny) {
 	//Performs the projection step uNext=uStar-dt Rinv G P
 	
 	//Preallocates
@@ -203,22 +205,44 @@ void SolverOperators::ProjectionStep(double *uStar, double *vStar, double *uNext
 		Gvp = new double[nx*(ny - 1)];
 		Rup_inv = new double[(nx - 1)*ny];
 		Rvp_inv = new double[nx*(ny - 1)];
+		Fxp = new double[(nx - 1)*ny];
+		Fyp = new double[nx*(ny - 1)];
 		Projection_alloc = 1;
 	}
 
+
 	SolverOperators::GradientOperator2D(P, Gup, Gvp, dx, dy, nx, ny);
-	SolverOperators::R_Operator_Inv(Gup, Gvp, Rup_inv, Rvp_inv, Re, dx, dy, dt, nx, ny);
+	IB_Operators::RegularizationOperator(Fxp, Fyp, B->Fx, B->Fy, B, dx, dy, nx, ny);
+
+	//Updates u component of Gu to include immersed boundary forces
+	for (int j = 0; j < ny; j++) {
+		for (int i = 0; i < (nx - 1); i++) {
+			Gup[j * (nx - 1) + i] = (Gup[j * (nx - 1) + i] - Fxp[j * (nx - 1) + i]) ;
+		}
+	}
+
+	//Updates v component of Gv to include immersed boundary forces
+	for (int j = 0; j < (ny - 1); j++) {
+		for (int i = 0; i < nx; i++) {
+			//---v component----
+			Gvp[j * nx + i] = (Gvp[j * nx + i] - Fyp[j * nx + i]); //
+		}
+	}
+
+
+	SolverOperators::R_Operator_Inv(Gup, Gvp, Rup_inv, Rvp_inv, Re, dx, dy, dt, nx, ny); //Applies R_inv as always
 
 	for (int j = 0; j < ny; j++) {
 		for (int i = 0; i < (nx - 1); i++) {
-			uNext[j * (nx - 1) + i] = uStar[j * (nx - 1) + i] - dt * Rup_inv[j * (nx - 1) + i];
+			uNext[j * (nx - 1) + i] = uStar[j * (nx - 1) + i] - Rup_inv[j * (nx - 1) + i];
 		}
 	}
 	for (int j = 0; j < (ny - 1); j++) {
 		for (int i = 0; i < nx; i++) {
-			vNext[j * nx + i] = vStar[j * nx + i] - dt * Rvp_inv[j * nx + i];
+			vNext[j * nx + i] = vStar[j * nx + i] - Rvp_inv[j * nx + i];
 		}
 	}
+
 }
 
 

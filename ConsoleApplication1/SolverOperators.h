@@ -1,6 +1,8 @@
 #pragma once
 #include "Plotting.h"
 #include "BC_2D.h"
+#include "ImmersedBoundaryOperators.h"
+#include "Body.h"
 #include <time.h>
 
 class SolverOperators
@@ -16,6 +18,6 @@ public:
 		double *uResult, double *vResult, double Re, double dx, double dy, double dt, int nx, int ny, double reltol);
 	static void R_Operator(double *u, double *v, double *res_u, double *res_v, double Re, double dx, double dy, double dt, int nx, int ny);
 	static void R_Operator_Inv(double *u, double *v, double *res_u, double *res_v, double Re, double dx, double dy, double dt, int nx, int ny);
-	static void ProjectionStep(double *uStar, double *vStar, double *uNext, double *vNext, double *P, double Re, double dx, double dy, double dt, int nx, int ny);
+	static void ProjectionStep(double *uStar, double *vStar, double *uNext, double *vNext, double *P, Body *B, double Re, double dx, double dy, double dt, int nx, int ny);
 };
 
