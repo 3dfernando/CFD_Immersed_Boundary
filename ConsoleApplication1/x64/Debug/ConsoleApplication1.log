@@ -1,4 +1,4 @@
 ﻿  CFD_Project.cpp
-f:\00 - files\00 - personal\21 - phd\10 - classes\02 - major [fluid mech]\eml5930 - cfd\03 - project\cpp\cfd_solver_r06\consoleapplication1\cfd_project.cpp(211): warning C4101: 'B': unreferenced local variable
-  ConsoleApplication1.vcxproj -> F:\00 - Files\00 - Personal\21 - PhD\10 - Classes\02 - Major [Fluid Mech]\EML5930 - CFD\03 - Project\Cpp\CFD_Solver_R06\x64\Debug\CFDSolver.exe
-  ConsoleApplication1.vcxproj -> F:\00 - Files\00 - Personal\21 - PhD\10 - Classes\02 - Major [Fluid Mech]\EML5930 - CFD\03 - Project\Cpp\CFD_Solver_R06\x64\Debug\CFDSolver.pdb (Partial PDB)
+g:\00 - files\00 - personal\21 - phd\10 - classes\02 - major [fluid mech]\eml5930 - cfd\03 - project\cpp\cfd_solver_r10 (interface)\consoleapplication1\cfd_project.cpp(237): warning C4101: 'B': unreferenced local variable
+  ConsoleApplication1.vcxproj -> G:\00 - Files\00 - Personal\21 - PhD\10 - Classes\02 - Major [Fluid Mech]\EML5930 - CFD\03 - Project\Cpp\CFD_Solver_R10 (Interface)\x64\Debug\CFDSolver.exe
+  ConsoleApplication1.vcxproj -> G:\00 - Files\00 - Personal\21 - PhD\10 - Classes\02 - Major [Fluid Mech]\EML5930 - CFD\03 - Project\Cpp\CFD_Solver_R10 (Interface)\x64\Debug\CFDSolver.pdb (Partial PDB)

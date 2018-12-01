@@ -101,7 +101,7 @@ HBITMAP Plotting::ArrayToBitmap(double *A, int W, int H)
 	return hbmp;
 }
 
-void Plotting::OutputTecplot(double *x, double *y, double *u, double *v, double *p, BC *B, int nx, int ny, double t, int Strand, bool EF) {
+void Plotting::OutputTecplot(double *x, double *y, double *u, double *v, double *p, BC *B, Body* BD, double dx, double dy, int nx, int ny, double dt, double t, int Strand, bool EF) {
 	//Outputs the result to tecplot as a *.plt file
 	INTEGER4 Debug = 1;
 	INTEGER4 VIsDouble = 1;
@@ -112,7 +112,7 @@ void Plotting::OutputTecplot(double *x, double *y, double *u, double *v, double 
 	char fName_c[30];
 	sprintf(fName_c, "R_%d.szplt", Strand);
 	
-	I = TECINI142((char*)"CFD Results", (char*)"X Y U V P", fName_c, (char*)".", &FileFormat, &FileType, &Debug, &VIsDouble);
+	I = TECINI142((char*)"CFD Results", (char*)"X Y U V P Fx Fy", fName_c, (char*)".", &FileFormat, &FileType, &Debug, &VIsDouble);
 
 	//Inits all the variables to write the proper format
 	INTEGER4 ICellMax = 0;
@@ -134,17 +134,43 @@ void Plotting::OutputTecplot(double *x, double *y, double *u, double *v, double 
 	INTEGER4 JMax = ny;
 	INTEGER4 KMax = 1;
 
+	//Computes the integral of drag forces:
+	double TotalFx, TotalFy;
+	TotalFx = 0; TotalFy = 0;
+	for (int k = 0; k < BD->ns; k++) {
+		TotalFx += BD->Fx[k];
+		TotalFy += BD->Fy[k];
+	}
+	TotalFx = -TotalFx * dx * dy / dt;
+	TotalFy = -TotalFy * dx * dy / dt;
+	std::cout << "Fx=" << TotalFx;
+	std::cout << "Fy=" << TotalFy << std::endl;
 
+	//Saves Tecplot File
 	float* X1;
 	float* Y1;
 	float* U1;
 	float* V1;
 	float* P1;
+	float* Fx1;
+	float* Fy1;
+	double* Fx2;
+	double* Fy2;
 	X1 = new float[nx*ny];
 	Y1 = new float[nx*ny];
 	U1 = new float[nx*ny];
 	V1 = new float[nx*ny];
 	P1 = new float[nx*ny];
+	Fx1 = new float[nx*ny];
+	Fy1 = new float[nx*ny];
+	Fx2 = new double[nx * ny];
+	Fy2 = new double[nx * ny];
+
+	//Calls the regularization operator and produces the body force projected in the fluid
+	IB_Operators::RegularizationOperator(Fx2, Fy2, BD->Fx, BD->Fy, BD, dx, dy, nx, ny);
+
+
+
 	for (int i = 0; i < nx*ny; i++) {
 		X1[i] = (float)x[i]; //Typecasts variables
 		Y1[i] = (float)y[i];
@@ -153,40 +179,48 @@ void Plotting::OutputTecplot(double *x, double *y, double *u, double *v, double 
 	//Performs interpolation of the u, v fields to the center of the cell
 	for (int j = 0; j < ny; j++) {
 		for (int i = 0; i < nx; i++) {
-			P1[j*nx + i] = p[j*nx + i];
+			P1[j*nx + i] = (float)p[j*nx + i];
 		}
 	}
 	for (int j = 0; j < ny; j++) {
 		for (int i = 0; i < nx; i++) {
 			if (i == 0) {
-				U1[j*nx + i] = (B->GetVal(BC::VEC_U_LEFT, j) + u[j*(nx - 1) + i]) / 2; //BC
+				U1[j*nx + i] = (float)((B->GetVal(BC::VEC_U_LEFT, j) + u[j*(nx - 1) + i]) / 2); //BC
+				Fx1[j*nx + i] = (float)(Fx2[j*(nx - 1) + i] / 2); //Force at boundary is 0
 			}
 			else if (i == (nx - 1)) {
-				U1[j*nx + i] = (u[j*(nx - 1) + (i - 1)] + B->GetVal(BC::VEC_U_RIGHT, j)) / 2; //BC
+				U1[j*nx + i] = (float)((u[j*(nx - 1) + (i - 1)] + B->GetVal(BC::VEC_U_RIGHT, j)) / 2); //BC
+				Fx1[j*nx + i] = (float)(Fx2[j*(nx - 1) + (i - 1)] / 2); //Force at boundary is 0
 			}
 			else {
-				U1[j*nx + i] = (u[j*(nx - 1) + (i - 1)] + u[j*(nx - 1) + i]) / 2; //Interpolates to get U
+				U1[j*nx + i] = (float)((u[j*(nx - 1) + (i - 1)] + u[j*(nx - 1) + i]) / 2); //Interpolates to get U
+				Fx1[j*nx + i] = (float)((Fx2[j*(nx - 1) + (i - 1)] + Fx2[j*(nx - 1) + i]) / 2); //Interpolates to get Fx
 			}
+			Fx1[j*nx + i] = -Fx1[j*nx + i] * dx * dy / dt; //Corrects scale factors beta/alpha (H=E^T) and -dt (from lambda)
 		}
 	}
 	for (int j = 0; j < ny; j++) {
 		for (int i = 0; i < nx; i++) {
 			if (j == 0) {
-				V1[j*nx + i] = (B->GetVal(BC::VEC_V_BOTTOM, i) + v[j*nx + i]) / 2; //BC
+				V1[j*nx + i] = (float)((B->GetVal(BC::VEC_V_BOTTOM, i) + v[j*nx + i]) / 2); //BC
+				Fy1[j*nx + i] = (float)(Fy2[j*nx + i] / 2); //Force at boundary is 0
 			}
 			else if (j == (ny - 1)) {
-				V1[j*nx + i] = (v[(j - 1)*nx + i] + B->GetVal(BC::VEC_V_TOP, i)) / 2; //BC
+				V1[j*nx + i] = (float)((v[(j - 1)*nx + i] + B->GetVal(BC::VEC_V_TOP, i)) / 2); //BC
+				Fy1[j*nx + i] = (float)(Fy2[(j - 1)*nx + i] / 2); //Force at boundary is 0
 			}
 			else {
-				V1[j*nx + i] = (v[(j - 1)*nx + i] + v[j*nx + i]) / 2; //Interpolates to get V
+				V1[j*nx + i] = (float)((v[(j - 1)*nx + i] + v[j*nx + i]) / 2); //Interpolates to get V
+				Fy1[j*nx + i] = (float)((Fy2[(j - 1)*nx + i] + Fy2[j*nx + i]) / 2); //Interpolates to get Fy
 			}
+			Fy1[j*nx + i] = -Fy1[j*nx + i] * dx * dy / dt; //Corrects scale factors beta/alpha (H=E^T) and -dt (from lambda)
 		}
 	}
 	
 
 	/* Ordered Zone */
 	INTEGER4 ZoneType = 0;
-	I = TECZNE142((char*) "Ordered Zone",
+	I = TECZNE142((char*) "Flow Field",
 		&ZoneType,
 		&IMax,
 		&JMax,
@@ -213,12 +247,25 @@ void Plotting::OutputTecplot(double *x, double *y, double *u, double *v, double 
 	I = TECDAT142(&III, U1, &DIsDouble);
 	I = TECDAT142(&III, V1, &DIsDouble);
 	I = TECDAT142(&III, P1, &DIsDouble);
+	I = TECDAT142(&III, Fx1, &DIsDouble);
+	I = TECDAT142(&III, Fy1, &DIsDouble);
+
+
+	/* FE Zone for body */
+
+
 
 	I = TECEND142(); //Ends file
 
 	delete[] X1;
 	delete[] Y1;
+	delete[] U1;
+	delete[] V1;
 	delete[] P1;
+	delete[] Fx1;
+	delete[] Fy1;
+	delete[] Fx2;
+	delete[] Fy2;
 }
 
 void Plotting::Print_CFL_Re(double Re, double dx, double dy, double dt, double t, double *u, double *v, int nx, int ny) {

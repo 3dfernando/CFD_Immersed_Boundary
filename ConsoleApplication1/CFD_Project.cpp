@@ -5,6 +5,7 @@
 #include "ImmersedBoundaryOperators.h"
 #include "BC_2D.h"
 #include "Body.h"
+#include "Setup_Interface.h"
 #include <iostream>
 #include <time.h>
 #include <tchar.h>
@@ -12,6 +13,9 @@
 #include <thread>
 #include <ctime>
 #include <cmath>
+#include <direct.h> //Gets current path
+#include <stdio.h>
+#define GetCurrentDir _getcwd
 
 using namespace std;
 
@@ -40,23 +44,128 @@ int main()
 	//=====================INITIALIZATION OF PARAMETERS=====================
 	//======================================================================
 	double* x; double*y;
-	double dx = 0.05; //x spacing of grid cells
-	double dy = 0.05; //y spacing of grid cells
-	double dt = 0.01; //time step increment
-	double Re = 100;  //Simulation Reynolds number
+	double dx; //x spacing of grid cells
+	double dy; //y spacing of grid cells
+	double dt; //time step increment
+	double Re;  //Simulation Reynolds number
 
-	double reltol = 1e-6; //Relative tolerance to stop CG algorithm
+	double reltol; //Relative tolerance to stop CG algorithm
 
-	int nx = 176; //nx, ny are the number of grid points
-	int ny = 120; //nx different than ny to spot swapping mistakes
-	int last_t = 200000; //t is the time step (not the true simulation time).
-	int t_decimation = 10; //Saves a field file only every t_decimation time steps
+	int nx; //nx, ny are the number of grid points
+	int ny; 
+	int last_t; //t is the time step (not the true simulation time).
+	int t_decimation; //Saves a field file only every t_decimation time steps
 
-	double x_CylCenter = dx * (double)nx / 3; //Initializes Cylinder center coordinate and radius
-	double y_CylCenter = dy * (double)ny / 2;
-	double R_Cyl = min(dx * (double)nx, dy * (double)ny) / 12;
+	//-------Boundary Conditions Variables--------
+	double* uTop;	double* uBottom;
+	double* uLeft;	double* uRight;
+	double* vTop;	double* vBottom;
+	double* vRight;	double* vLeft;
 
-	SetConsoleCtrlHandler((PHANDLER_ROUTINE)(ctrl_handler), TRUE); //Kills console window gracefully
+	int uLK, uRK, uBK, uTK;
+	int vLK, vRK, vBK, vTK;
+
+	//-----------Domain variables----------
+	double* uOld; //Stores previous time step u, v, P
+	double* vOld;
+	double* POld;
+
+	double* u; //Stores current time step u, v, P
+	double* v;
+	double* P;
+
+	//================================================
+	//=====Opens the simulation parameters file=======
+	//================================================
+	char cCurrentPath[FILENAME_MAX];
+	GetCurrentDir(cCurrentPath, sizeof(cCurrentPath));
+	std::string f(cCurrentPath);
+	f = f + "\\Initialization.mat";
+	Setup_Interface::GetSimulationParameters(f, &dx, &dy, &dt, &nx, &ny, &Re, &reltol, &last_t, &t_decimation, &uLeft, &uRight, &uTop, &uBottom, &vLeft, &vRight, &vTop, &vBottom, &u, &v, &P,
+		&uLK, &uRK, &uTK, &uBK, &vLK, &vRK, &vTK, &vBK);
+
+	//Initializes the old variables with the current values
+	uOld = new double[(nx - 1) * ny];
+	vOld = new double[nx * (ny - 1)];
+	POld = new double[nx*ny];
+	for (int j = 0; j < ny; j++) {
+		for (int i = 0; i < (nx - 1); i++) {
+			uOld[j*(nx - 1) + i] = u[j*(nx - 1) + i];
+		}
+	}
+	for (int j = 0; j < (ny - 1); j++) {
+		for (int i = 0; i < nx; i++) {
+			vOld[j*nx + i] = v[j*nx + i];
+		}
+	}
+	for (int j = 0; j < ny; j++) {
+		for (int i = 0; i < nx; i++) {
+			POld[j*nx + i] = P[j*nx + i];
+		}
+	}
+
+	//===================================================================
+	//=====================Inits Boundary conditions=====================
+	//===================================================================
+	BC* Boundary;
+	Boundary = new BC(nx, ny, dx, dy, dt, u, v, uOld, vOld);
+
+	Boundary->SetVector(BC::VEC_U_TOP, uTop);
+	Boundary->SetVector(BC::VEC_U_BOTTOM, uBottom);
+	Boundary->SetVector(BC::VEC_U_RIGHT, uRight);
+	Boundary->SetVector(BC::VEC_U_LEFT, uLeft);
+
+	Boundary->SetKind(BC::VEC_U_LEFT, uLK);
+	Boundary->SetKind(BC::VEC_U_RIGHT, uRK);
+	Boundary->SetKind(BC::VEC_U_TOP, uTK);
+	Boundary->SetKind(BC::VEC_U_BOTTOM, uBK);
+
+	Boundary->SetVector(BC::VEC_V_TOP, vTop);
+	Boundary->SetVector(BC::VEC_V_BOTTOM, vBottom);
+	Boundary->SetVector(BC::VEC_V_RIGHT, vRight);
+	Boundary->SetVector(BC::VEC_V_LEFT, vLeft);
+
+	Boundary->SetKind(BC::VEC_V_TOP, vTK);
+	Boundary->SetKind(BC::VEC_V_BOTTOM, vBK);
+	Boundary->SetKind(BC::VEC_V_RIGHT, vRK);
+	Boundary->SetKind(BC::VEC_V_LEFT, vLK);
+
+
+	//===============================================
+	//========Initializes the body in the IBM========
+	//===============================================
+	int ns;
+	double ds;
+	double* xBody; 
+	double* yBody;
+	double* vxBody;
+	double* vyBody;
+	double* xForceBody;
+	double* yForceBody;
+	double xCenter; //Center of rotation
+	double yCenter;
+	double* xTraj;
+	double* yTraj;
+	double* thetaTraj;
+
+	std::string f2(cCurrentPath);
+	f2 = f2 + "\\Body.mat";
+	Setup_Interface::LoadBodyAndTrajectory(f2, &ns, &ds, &xBody, &yBody, &xCenter, &yCenter, &xTraj, &yTraj, &thetaTraj);
+
+	//Inits forces and velocities to zero in the first time step
+	vxBody = new double[ns];
+	vyBody = new double[ns];
+	xForceBody = new double[ns];
+	yForceBody = new double[ns];
+	for (int k = 0; k < ns; k++) {
+		vxBody[k] = 0;
+		vyBody[k] = 0;
+		xForceBody[k] = 0;
+		yForceBody[k] = 0;
+	}
+
+	Body* ImmersedBody = new Body(xBody, yBody, vxBody, vyBody, xForceBody, yForceBody, ds, ns, xTraj, yTraj, thetaTraj, xCenter, yCenter);
+
 
 	//==========Defines x, y coordinates of the grid =================
 	//================================================================
@@ -69,141 +178,7 @@ int main()
 		}
 	}
 
-
-	//==========Initializes x, y coordinates of the cylinder==========
-	//================================================================
-	double ds = min(dx, dy);
-	int ns = (int)round((R_Cyl * 2 * pi) / ds);
-	ds = (R_Cyl * 2 * pi) / (double)ns; //Updates ds with the rounded ns
-
-	double* xCyl; //Inits cyl coords and vels
-	double* yCyl;
-	double* vxCyl;
-	double* vyCyl;
-	double* xForceCyl;
-	double* yForceCyl;
-	xCyl = new double[ns];
-	yCyl = new double[ns];
-	vxCyl = new double[ns];
-	vyCyl = new double[ns];
-	xForceCyl = new double[ns];
-	yForceCyl = new double[ns];
-
-	//For debug
-	/*ns = 1;
-	R_Cyl = 0;//*/
-
-	for (int k = 0; k < ns; k++) {
-		xCyl[k] = x_CylCenter + R_Cyl * cos(((double)k / ns) * 2 * pi);
-		yCyl[k] = y_CylCenter + R_Cyl * sin(((double)k / ns) * 2 * pi);
-		vxCyl[k] = 0;
-		vyCyl[k] = 0;
-		xForceCyl[k] = 0;
-		yForceCyl[k] = 0;
-	}
-
-	Body* Cylinder = new Body(xCyl, yCyl, vxCyl, vyCyl, xForceCyl, yForceCyl, ds, ns);
-
-
-	//==========Initializes values for u and v =================
-	//==========================================================
-
-	double* uOld; //Stores previous time step u, v, P
-	double* vOld;
-	double* POld;
-
-	double* u; //Stores current time step u, v, P
-	double* v;
-	double* P;
-
-	u = new double[(nx - 1) * ny];
-	v = new double[nx * (ny - 1)];
-	uOld = new double[(nx - 1) * ny];
-	vOld = new double[nx * (ny - 1)];
-	P = new double[nx*ny];
-	POld = new double[nx*ny];
 	
-	//=====================Inits u and v =====================
-	for (int j = 0; j < ny; j++) {
-		for (int i = 0; i < (nx - 1); i++) {
-			u[j*(nx - 1) + i] = 0;
-			uOld[j*(nx - 1) + i] = u[j*(nx - 1) + i];
-		}
-	}
-
-	for (int j = 0; j < (ny - 1); j++) {
-		for (int i = 0; i < nx; i++) {
-			v[j*nx + i] = 0;
-			vOld[j*nx + i] = v[j*nx + i];
-		}
-	}
-	//=====================Inits P =====================
-	for (int j = 0; j < ny; j++) {
-		for (int i = 0; i < nx; i++) {
-			P[j*nx + i] = 0;
-			POld[j*nx + i] = P[j*nx + i];
-		}
-	}
-
-	//===================================================================
-	//=====================Inits Boundary conditions=====================
-	//===================================================================
-	BC* Boundary;
-	Boundary = new BC(nx, ny, dx, dy, dt, u, v, uOld, vOld);
-
-	double* uTop;	double* uBottom;
-	uTop = new double[nx - 1]; uBottom = new double[nx - 1];
-	for (int i = 0; i < (nx - 1); i++) { uTop[i] = 0; uBottom[i] = 0;}
-	Boundary->SetVector(BC::VEC_U_TOP, uTop);
-	Boundary->SetVector(BC::VEC_U_BOTTOM, uBottom);
-
-	double* uLeft;	double* uRight;
-	uLeft = new double[ny]; uRight = new double[ny];
-	for (int i = 0; i < ny; i++) {
-		if (i < (ny / 3)) {
-			uLeft[i] = 1;
-			uRight[i] = 1;
-		}
-		else if (i < (2 * ny / 3)) {
-			uLeft[i] = 1;
-			uRight[i] = 1;
-		}
-		else {
-			uLeft[i] = 1;
-			uRight[i] = 1;
-		}
-	}
-	Boundary->SetVector(BC::VEC_U_RIGHT, uRight);
-	Boundary->SetVector(BC::VEC_U_LEFT, uLeft);
-	Boundary->SetKind(BC::VEC_U_LEFT,BC::BC_Dirichlet);
-	Boundary->SetKind(BC::VEC_U_RIGHT, BC::BC_Outflow);
-	
-	double* vTop;	double* vBottom;
-	vTop = new double[nx]; vBottom = new double[nx];
-	for (int i = 0; i < nx; i++) {
-		if (i < (nx / 3)) {
-			vTop[i] = 0;
-			vBottom[i] = 0;
-		}
-		else if (i < (2 * nx / 3)) {
-			vTop[i] = 0;
-			vBottom[i] = 0;
-		}
-		else {
-			vTop[i] = 0;
-			vBottom[i] = 0;
-		}
-	}
-	Boundary->SetVector(BC::VEC_V_TOP, vTop);
-	Boundary->SetVector(BC::VEC_V_BOTTOM, vBottom);
-	Boundary->SetKind(BC::VEC_V_TOP, BC::BC_Dirichlet);
-	Boundary->SetKind(BC::VEC_V_BOTTOM, BC::BC_Dirichlet);
-
-	double* vRight;	double* vLeft;
-	vRight = new double[ny - 1]; vLeft = new double[ny - 1];
-	for (int i = 0; i < (ny - 1); i++) { vRight[i] = 0; vLeft[i] = 0; }
-	Boundary->SetVector(BC::VEC_V_RIGHT, vRight);
-	Boundary->SetVector(BC::VEC_V_LEFT, vLeft);
 
 	//
 	//=====================Other variables for the integrator=====================
@@ -226,8 +201,8 @@ int main()
 	Gv = new double[nx*ny];
 	D = new double[nx*ny];
 	Dbc = new double[nx*ny];
-	uInterp = new double[Cylinder->ns];
-	vInterp = new double[Cylinder->ns];
+	uInterp = new double[ImmersedBody->ns];
+	vInterp = new double[ImmersedBody->ns];
 
 
 	//========================================================================
@@ -240,8 +215,8 @@ int main()
 		Plotting::Print_CFL_Re(Re, dx, dy, dt, t, u, v, nx, ny); //Calculates maximum Courant and Reynolds and displays in Console window
 		
 		//Outputs the tecplot file
-		if (t % t_decimation == 0) {
-			Plotting::OutputTecplot(x, y, u, v, P, Boundary, nx, ny, (double)t * dt, t, false);
+		if ((t % t_decimation == 0) && (t > 0)) {
+			Plotting::OutputTecplot(x, y, u, v, P, Boundary, ImmersedBody, dx, dy, nx, ny, dt, (double)t * dt, t, false);
 		}
 
 		//Updates the u, v, P plots in console window
@@ -269,11 +244,11 @@ int main()
 		}
 
 		//Interpolates uStar and vStar to the Lagrangian grid
-		IB_Operators::InterpolationOperator(uStar, vStar, uInterp, vInterp, Cylinder, dx, dy, nx, ny);
+		IB_Operators::InterpolationOperator(uStar, vStar, uInterp, vInterp, ImmersedBody, dx, dy, nx, ny);
 
 		//Solves the Poisson equation
 		//clock_t start = clock(); //Times the routine
-		Poisson::CGModifiedPressurePoisson2D(POld, D, P, Cylinder, uInterp, vInterp, dx, dy, dt, Re, nx, ny, reltol);
+		Poisson::CGModifiedPressurePoisson2D(POld, D, P, ImmersedBody, uInterp, vInterp, dx, dy, dt, Re, nx, ny, reltol);
 		//clock_t end = clock();
 		//double time = (double)(end - start) / CLOCKS_PER_SEC * 1000.0;
 						
@@ -281,9 +256,8 @@ int main()
 		for (int i = 0; i < nx*ny; i++) { POld[i] = P[i]; } //POld could be removed and save time but potential savings are small
 
 		//Calculates the gradient of P
-		SolverOperators::ProjectionStep(uStar, vStar, u, v, P, Cylinder, Re, dx, dy, dt, nx, ny);
+		SolverOperators::ProjectionStep(uStar, vStar, u, v, P, ImmersedBody, Re, dx, dy, dt, nx, ny);
 					
-
 		//Moves u and v to uOld and vOld
 		for (int j = 0; j < ny; j++) {
 			for (int i = 0; i < (nx - 1); i++) {
@@ -295,6 +269,9 @@ int main()
 				vOld[j*nx + i] = v[j*nx + i];
 			}
 		}
+
+		//Updates the body trajectory
+		ImmersedBody->UpdateTrajectory(t, dt);
 
 		//Clears the clutter in the console window.
 		if (t % 10 == 0) {
@@ -313,16 +290,4 @@ int main()
 
 }
 
-
-
-#pragma region RandomRoutines
-	void sleep(int milliseconds)
-	{
-		clock_t time_end;
-		time_end = clock() + milliseconds * CLOCKS_PER_SEC / 1000;
-		while (clock() < time_end)
-		{
-		}
-	}
-#pragma endregion
 

@@ -5,6 +5,7 @@
 //Global variables for CG
 double *d_p;
 double *r_p;
+double *s_p;
 double *pStarOld;
 double *pTemp;
 double *fxTemp;
@@ -13,6 +14,8 @@ double *d_fx;
 double *d_fy;
 double *r_fx;
 double *r_fy;
+double *s_fx;
+double *s_fy;
 double *fxOld;
 double *fyOld;
 bool CG_alloc = 0;
@@ -47,6 +50,7 @@ void Poisson::CGModifiedPressurePoisson2D(double *pGuess, double *rp, double *pR
 		d_p = new double[nx*ny];
 		pStarOld = new double[nx*ny];
 		r_p = new double[nx*ny];
+		s_p = new double[nx*ny];
 		pTemp = new double[nx*ny];
 		fxTemp = new double[B->ns];
 		fyTemp = new double[B->ns];
@@ -54,6 +58,8 @@ void Poisson::CGModifiedPressurePoisson2D(double *pGuess, double *rp, double *pR
 		d_fy = new double[B->ns];
 		r_fx = new double[B->ns];
 		r_fy = new double[B->ns];
+		s_fx = new double[B->ns];
+		s_fy = new double[B->ns];
 		fxOld = new double[B->ns];
 		fyOld = new double[B->ns];
 		CG_alloc = 1;
@@ -71,18 +77,25 @@ void Poisson::CGModifiedPressurePoisson2D(double *pGuess, double *rp, double *pR
 	for (int j = 0; j < ny; j++) {
 		for (int i = 0; i < nx; i++) {
 			r_p[j * nx + i] = rp[j * nx + i] - pTemp[j * nx + i];
-			d_p[j * nx + i] = r_p[j * nx + i];
-			delta += r_p[j * nx + i] * r_p[j * nx + i];
+			//d_p[j * nx + i] = r_p[j * nx + i];
 			pResult[j * nx + i] = pGuess[j * nx + i]; //Inits result
 		}
 	}
 	for (int k = 0; k < B->ns; k++) {
 		r_fx[k] = (uInterp[k] - B->vel_x[k]) - fxTemp[k]; //RHS of force equation is [Eu* - u_b]
 		r_fy[k] = (vInterp[k] - B->vel_y[k]) - fyTemp[k];
-		d_fx[k] = r_fx[k];
-		d_fy[k] = r_fy[k];
-		delta += r_fx[k] * r_fx[k] + r_fy[k] * r_fy[k];
+		//d_fx[k] = r_fx[k];
+		//d_fy[k] = r_fy[k];
 		//Doesn't init B->Fx and Fy as it is not necessary
+	}
+	Preconditioner(r_p, r_fx, r_fy, d_p, d_fx, d_fy, dx, dy, nx, ny, B); //Applies the preconditioner
+	for (int j = 0; j < ny; j++) {
+		for (int i = 0; i < nx; i++) {
+			delta += r_p[j * nx + i] * d_p[j * nx + i];
+		}
+	}
+	for (int k = 0; k < B->ns; k++) {
+		delta += r_fx[k] * d_fx[k] + r_fy[k] * d_fy[k];
 	}
 
 	delta0 = delta;
@@ -113,8 +126,6 @@ void Poisson::CGModifiedPressurePoisson2D(double *pGuess, double *rp, double *pR
 			B->Fx[k] += alpha * d_fx[k];
 			B->Fy[k] += alpha * d_fy[k];
 		}
-		//pResult[nx * ny - 1] = 0; //Enforces the pinned point (not needed because D(nx*ny+1)=0 but just making sure)
-
 
 		//Quick formula to update the residuals
 		for (int j = 0; j < ny; j++) {
@@ -127,16 +138,19 @@ void Poisson::CGModifiedPressurePoisson2D(double *pGuess, double *rp, double *pR
 			r_fy[k] = r_fy[k] - alpha * fyTemp[k];
 		}
 
+		//Updates s with preconditioner
+		Preconditioner(r_p, r_fx, r_fy, s_p, s_fx, s_fy, dx, dy, nx, ny, B); //Applies the preconditioner
+		
 		//Updates delta
 		deltaOld = delta;
 		delta = 0;
 		for (int j = 0; j < ny; j++) {
 			for (int i = 0; i < nx; i++) {
-				delta += r_p[j * nx + i] * r_p[j * nx + i];
+				delta += r_p[j * nx + i] * s_p[j * nx + i];
 			}
 		}
 		for (int k = 0; k < B->ns; k++) {
-			delta += r_fx[k] * r_fx[k] + r_fy[k] * r_fy[k];
+			delta += r_fx[k] * s_fx[k] + r_fy[k] * s_fy[k];
 		}
 
 
@@ -145,12 +159,12 @@ void Poisson::CGModifiedPressurePoisson2D(double *pGuess, double *rp, double *pR
 		//Updates d
 		for (int j = 0; j < ny; j++) {
 			for (int i = 0; i < nx; i++) {
-				d_p[j * nx + i] = r_p[j * nx + i] + beta * d_p[j * nx + i];
+				d_p[j * nx + i] = s_p[j * nx + i] + beta * d_p[j * nx + i];
 			}
 		}
 		for (int k = 0; k < B->ns; k++) {
-			d_fx[k] = r_fx[k] + beta * d_fx[k];
-			d_fy[k] = r_fy[k] + beta * d_fy[k];
+			d_fx[k] = s_fx[k] + beta * d_fx[k];
+			d_fy[k] = s_fy[k] + beta * d_fy[k];
 		}
 	}	
 
@@ -195,3 +209,20 @@ void Poisson::Laplacian_Q(double *p, double *BFx, double *BFy, double *res_p, do
 	IB_Operators::InterpolationOperator(Ru_inv, Rv_inv, res_uInterp, res_vInterp, B, dx, dy, nx, ny); //Interpolates velocity in Lagrangian grid
 }
 
+void Poisson::Preconditioner(double* rp, double* rfx, double* rfy, double* sp, double* sfx, double* sfy, double dx, double ds, int nx, int ny, Body* B) {
+	//Implements the CG preconditioner to accelerate convergence.
+	//Simple scaling r_p by dx^2 and r_f by ds. Returns in s_p and s_f
+
+	double dx2 = dx * dx;
+
+	for (int j = 0; j < ny; j++) {
+		for (int i = 0; i < nx; i++) {
+			sp[j * nx + i] = rp[j * nx + i] * dx2;
+		}
+	}
+	for (int k = 0; k < B->ns; k++) {
+		sfx[k] = rfx[k] / ds;
+		sfy[k] = rfy[k] / ds;
+	}
+
+}
