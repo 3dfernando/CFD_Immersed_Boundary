@@ -4,7 +4,7 @@ BC_2D.cpp(307): warning C4101: 'ddx': unreferenced local variable
   Body.cpp
 Body.cpp(15): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
   CFD_Project.cpp
-CFD_Project.cpp(237): warning C4101: 'B': unreferenced local variable
+CFD_Project.cpp(175): warning C4101: 'B': unreferenced local variable
   ImmersedBoundaryOperators.cpp
   Plotting.cpp
 Plotting.cpp(40): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
@@ -23,12 +23,12 @@ Setup_Interface.cpp(313): warning C4996: 'strcpy': This function or variable may
   C:\Program Files (x86)\Windows Kits\10\Include\10.0.15063.0\ucrt\string.h(136): note: see declaration of 'strcpy'
 Setup_Interface.cpp(321): warning C4477: 'printf' : format string '%s' requires an argument of type 'char *', but variadic argument 1 has type 'std::string'
   SolverOperators.cpp
-SolverOperators.cpp(279): warning C4101: 'alphaNum': unreferenced local variable
-SolverOperators.cpp(280): warning C4101: 'betaNum': unreferenced local variable
-SolverOperators.cpp(280): warning C4101: 'betaDen': unreferenced local variable
+SolverOperators.cpp(291): warning C4101: 'alphaNum': unreferenced local variable
+SolverOperators.cpp(292): warning C4101: 'betaNum': unreferenced local variable
+SolverOperators.cpp(292): warning C4101: 'betaDen': unreferenced local variable
   Generating code
-  162 of 164 functions (98.8%) were compiled, the rest were copied from previous compilation.
-    112 functions were new in current compilation
+  159 of 164 functions (97.0%) were compiled, the rest were copied from previous compilation.
+    2 functions were new in current compilation
     0 functions had inline decision re-evaluated but remain unchanged
   Finished generating code
-  ConsoleApplication1.vcxproj -> G:\00 - Files\00 - Personal\21 - PhD\10 - Classes\02 - Major [Fluid Mech]\EML5930 - CFD\03 - Project\Cpp\CFD_Solver_R10 (Interface)\x64\Release\CFDSolver.exe
+  ConsoleApplication1.vcxproj -> G:\00 - Files\00 - Personal\21 - PhD\10 - Classes\02 - Major [Fluid Mech]\EML5930 - CFD\03 - Project\Cpp\CFD_Solver_R13 (Interface_IndependentPoints)\x64\Release\CFDSolver.exe

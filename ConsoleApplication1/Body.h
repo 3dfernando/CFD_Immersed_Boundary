@@ -4,7 +4,7 @@
 class Body
 {
 public:
-	Body(double* xPos, double* yPos, double* xVel, double* yVel, double* xForce, double* yForce, double delta_s, double n_s, double* Tx, double* Ty, double* Tt, double xC, double yC);
+	Body(double* xPos, double* yPos, double* xVel, double* yVel, double* xForce, double* yForce, double delta_s, double n_s, double* Tx, double* Ty, double xC, double yC);
 	void UpdateTrajectory(int t, double dt);
 	~Body();
 
@@ -18,7 +18,6 @@ public:
 	double ds;
 	double* Trajectory_x;
 	double* Trajectory_y;
-	double* Trajectory_theta;
 	double xCenter;
 	double yCenter;
 	int ns;

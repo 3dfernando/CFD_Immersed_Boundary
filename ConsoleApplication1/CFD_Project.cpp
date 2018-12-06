@@ -19,23 +19,13 @@
 
 using namespace std;
 
-void sleep(int milliseconds);
 
 #pragma region Variables
 	double dx;
 	double dy;
 	const double pi = 3.14159;
 #pragma endregion
-
-BOOL ctrl_handler(DWORD event)
-{
-	if (event == CTRL_CLOSE_EVENT) {
-		//Had some file saving routines here but they're not necessary anymore.
-		return TRUE;
-	}
-	return FALSE;
-}
-
+	
 int main()
 {
 	//Main routine does both initialization of the parameters for this simulation AND the time step integration.
@@ -146,11 +136,10 @@ int main()
 	double yCenter;
 	double* xTraj;
 	double* yTraj;
-	double* thetaTraj;
 
 	std::string f2(cCurrentPath);
 	f2 = f2 + "\\Body.mat";
-	Setup_Interface::LoadBodyAndTrajectory(f2, &ns, &ds, &xBody, &yBody, &xCenter, &yCenter, &xTraj, &yTraj, &thetaTraj);
+	Setup_Interface::LoadBodyAndTrajectory(f2, &ns, &ds, &xBody, &yBody, &xCenter, &yCenter, &xTraj, &yTraj); //Opens the body and trajectory file (Body.mat)
 
 	//Inits forces and velocities to zero in the first time step
 	vxBody = new double[ns];
@@ -164,7 +153,7 @@ int main()
 		yForceBody[k] = 0;
 	}
 
-	Body* ImmersedBody = new Body(xBody, yBody, vxBody, vyBody, xForceBody, yForceBody, ds, ns, xTraj, yTraj, thetaTraj, xCenter, yCenter);
+	Body* ImmersedBody = new Body(xBody, yBody, vxBody, vyBody, xForceBody, yForceBody, ds, ns, xTraj, yTraj, xCenter, yCenter);
 
 
 	//==========Defines x, y coordinates of the grid =================

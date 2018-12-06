@@ -221,8 +221,8 @@ void Poisson::Preconditioner(double* rp, double* rfx, double* rfy, double* sp, d
 		}
 	}
 	for (int k = 0; k < B->ns; k++) {
-		sfx[k] = rfx[k] / ds;
-		sfy[k] = rfy[k] / ds;
+		sfx[k] = rfx[k];
+		sfy[k] = rfy[k];
 	}
 
 }

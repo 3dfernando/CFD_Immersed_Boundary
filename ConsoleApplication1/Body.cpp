@@ -3,7 +3,7 @@
 
 
 
-Body::Body(double* xPos, double* yPos, double* xVel, double* yVel, double* xForce, double* yForce, double delta_s, double n_s, double* Tx, double* Ty, double* Tt, double xC, double yC)
+Body::Body(double* xPos, double* yPos, double* xVel, double* yVel, double* xForce, double* yForce, double delta_s, double n_s, double* Tx, double* Ty, double xC, double yC)
 {
 	x = xPos;
 	y = yPos;
@@ -15,7 +15,6 @@ Body::Body(double* xPos, double* yPos, double* xVel, double* yVel, double* xForc
 	ns = n_s;
 	Trajectory_x = Tx;
 	Trajectory_y = Ty;
-	Trajectory_theta = Tt;
 	xCenter = xC;
 	yCenter = yC;
 }
@@ -23,11 +22,9 @@ Body::Body(double* xPos, double* yPos, double* xVel, double* yVel, double* xForc
 void Body::UpdateTrajectory(int t, double dt) {
 	if (t > 0) {
 		//Updates the position and velocity of the points in the body
-		double dx = Trajectory_x[t] - Trajectory_x[t - 1];
-		double dy = Trajectory_y[t] - Trajectory_y[t - 1];
-		double dtheta = Trajectory_theta[t] - Trajectory_theta[t - 1];
-		double cost = cos(dtheta);
-		double sint = sin(dtheta);
+		double dx;
+		double dy;
+
 
 		double xOld;
 		double yOld;
@@ -36,10 +33,9 @@ void Body::UpdateTrajectory(int t, double dt) {
 			xOld = x[i];
 			yOld = y[i];
 
-			//Applies rotation
-			x[i] = xCenter + cost * (x[i] - xCenter) - sint * (y[i] - yCenter);
-			y[i] = yCenter + sint * (x[i] - xCenter) + cost * (y[i] - yCenter);
-
+			dx = Trajectory_x[t * ns + i] - Trajectory_x[(t - 1) * ns + i];
+			dy = Trajectory_y[t * ns + i] - Trajectory_y[(t - 1) * ns + i];
+			
 			//Applies displacement
 			x[i] += dx;
 			y[i] += dy;
@@ -63,4 +59,6 @@ Body::~Body()
 	delete[] Fy;
 	delete[] vel_x;
 	delete[] vel_y;
+	delete[] Trajectory_x;
+	delete[] Trajectory_y;
 }

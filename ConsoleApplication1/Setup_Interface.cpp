@@ -304,7 +304,7 @@ void Setup_Interface::GetSimulationParameters(std::string file, double* delta_x,
 
 }
 
-void Setup_Interface::LoadBodyAndTrajectory(std::string file, int* ns, double* ds, double** xBody, double** yBody, double* xCenter, double* yCenter, double** xTraj, double** yTraj, double** thetaTraj) {
+void Setup_Interface::LoadBodyAndTrajectory(std::string file, int* ns, double* ds, double** xBody, double** yBody, double* xCenter, double* yCenter, double** xTraj, double** yTraj) {
 	//Loads the body points and the trajectory as a function of time
 
 	char* f;
@@ -396,16 +396,6 @@ void Setup_Interface::LoadBodyAndTrajectory(std::string file, int* ns, double* d
 	}
 	tempArray4 = mxGetPr(matArray);
 	*yTraj = tempArray4;
-
-	double* tempArray5;
-	matArray = matGetVariable(pmat, "thetaTraj");
-	if (matArray == NULL) {
-		printf("Error reading thetaTraj\n");
-		Setup_Interface::sleep(10000);
-		exit(0);
-	}
-	tempArray5 = mxGetPr(matArray);
-	*thetaTraj = tempArray5;
 
 	int intTemp;
 	scalar = matGetVariable(pmat, "ns");

@@ -5,15 +5,21 @@ clear; clc; close all;
 %Also an external interface for this section is useful because it is not
 %hard-coded!
 
-dt=1e-4;
-dx=5/150;
-dy=5/150;
-nx=150;
-ny=150;
-Re=200;
+nRef=1;%Ratio of Re/100
 
-last_t=1e6;
-t_decimation=10;
+dt=5e-3/nRef;
+nx=300*nRef;
+ny=260*nRef;
+dx=15/nx;
+dy=13/ny;
+Re=100*nRef;
+
+uTest=3;
+CellRe=Re*dx*uTest %u is considered sqrt(2)
+CFL=dt*uTest/dx
+
+last_t=50e3;
+t_decimation=100;
 reltol=1e-6;
 
 %Boundary conditions
@@ -32,18 +38,23 @@ Dirichlet=0;
 Outflow=1;
 
 uLeftKind=Dirichlet;
-uRightKind=Dirichlet;
+uRightKind=Outflow;
 uTopKind=Dirichlet;
 uBottomKind=Dirichlet;
 
 vLeftKind=Dirichlet;
 vRightKind=Dirichlet;
 vTopKind=Dirichlet;
-vBottomKind=Outflow;
+vBottomKind=Dirichlet;
 
 %Domain
-u=ones(ny,nx-1)*0;
-v=ones(ny-1,nx)*0;
+% [x, y]=ndgrid(((1:nx)-1)/nx,((1:ny)-1)/ny);
+% d=sqrt((x-0.5).^2+(y-0.5).^2);
+% e=exp(-(d.^2)*10);
+% theta=atan2(y-0.5, x-0.5);
+
+u=randn(ny,nx-1)*0.05; %exp(-(d.^2)*10).*cos(theta);
+v=randn(ny-1,nx)*0;%-exp(-(d.^2)*10).*sin(theta);
 p=ones(ny,nx)*0;
 
 %Saves

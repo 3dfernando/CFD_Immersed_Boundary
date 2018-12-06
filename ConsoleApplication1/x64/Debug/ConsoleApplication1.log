@@ -1,4 +1,31 @@
-﻿  CFD_Project.cpp
-g:\00 - files\00 - personal\21 - phd\10 - classes\02 - major [fluid mech]\eml5930 - cfd\03 - project\cpp\cfd_solver_r10 (interface)\consoleapplication1\cfd_project.cpp(237): warning C4101: 'B': unreferenced local variable
-  ConsoleApplication1.vcxproj -> G:\00 - Files\00 - Personal\21 - PhD\10 - Classes\02 - Major [Fluid Mech]\EML5930 - CFD\03 - Project\Cpp\CFD_Solver_R10 (Interface)\x64\Debug\CFDSolver.exe
-  ConsoleApplication1.vcxproj -> G:\00 - Files\00 - Personal\21 - PhD\10 - Classes\02 - Major [Fluid Mech]\EML5930 - CFD\03 - Project\Cpp\CFD_Solver_R10 (Interface)\x64\Debug\CFDSolver.pdb (Partial PDB)
+﻿  stdafx.cpp
+  SolverOperators.cpp
+g:\00 - files\00 - personal\21 - phd\10 - classes\02 - major [fluid mech]\eml5930 - cfd\03 - project\cpp\cfd_solver_r13 (interface_independentpoints)\consoleapplication1\solveroperators.cpp(291): warning C4101: 'alphaNum': unreferenced local variable
+g:\00 - files\00 - personal\21 - phd\10 - classes\02 - major [fluid mech]\eml5930 - cfd\03 - project\cpp\cfd_solver_r13 (interface_independentpoints)\consoleapplication1\solveroperators.cpp(292): warning C4101: 'betaNum': unreferenced local variable
+g:\00 - files\00 - personal\21 - phd\10 - classes\02 - major [fluid mech]\eml5930 - cfd\03 - project\cpp\cfd_solver_r13 (interface_independentpoints)\consoleapplication1\solveroperators.cpp(292): warning C4101: 'betaDen': unreferenced local variable
+  Setup_Interface.cpp
+g:\00 - files\00 - personal\21 - phd\10 - classes\02 - major [fluid mech]\eml5930 - cfd\03 - project\cpp\cfd_solver_r13 (interface_independentpoints)\consoleapplication1\setup_interface.cpp(12): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+g:\00 - files\00 - personal\21 - phd\10 - classes\02 - major [fluid mech]\eml5930 - cfd\03 - project\cpp\cfd_solver_r13 (interface_independentpoints)\consoleapplication1\setup_interface.cpp(14): warning C4996: 'strcpy': This function or variable may be unsafe. Consider using strcpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  c:\program files (x86)\windows kits\10\include\10.0.15063.0\ucrt\string.h(136): note: see declaration of 'strcpy'
+g:\00 - files\00 - personal\21 - phd\10 - classes\02 - major [fluid mech]\eml5930 - cfd\03 - project\cpp\cfd_solver_r13 (interface_independentpoints)\consoleapplication1\setup_interface.cpp(21): warning C4477: 'printf' : format string '%s' requires an argument of type 'char *', but variadic argument 1 has type 'std::string'
+g:\00 - files\00 - personal\21 - phd\10 - classes\02 - major [fluid mech]\eml5930 - cfd\03 - project\cpp\cfd_solver_r13 (interface_independentpoints)\consoleapplication1\setup_interface.cpp(311): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+g:\00 - files\00 - personal\21 - phd\10 - classes\02 - major [fluid mech]\eml5930 - cfd\03 - project\cpp\cfd_solver_r13 (interface_independentpoints)\consoleapplication1\setup_interface.cpp(313): warning C4996: 'strcpy': This function or variable may be unsafe. Consider using strcpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  c:\program files (x86)\windows kits\10\include\10.0.15063.0\ucrt\string.h(136): note: see declaration of 'strcpy'
+g:\00 - files\00 - personal\21 - phd\10 - classes\02 - major [fluid mech]\eml5930 - cfd\03 - project\cpp\cfd_solver_r13 (interface_independentpoints)\consoleapplication1\setup_interface.cpp(321): warning C4477: 'printf' : format string '%s' requires an argument of type 'char *', but variadic argument 1 has type 'std::string'
+  Poisson.cpp
+  Plotting.cpp
+g:\00 - files\00 - personal\21 - phd\10 - classes\02 - major [fluid mech]\eml5930 - cfd\03 - project\cpp\cfd_solver_r13 (interface_independentpoints)\consoleapplication1\plotting.cpp(40): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+g:\00 - files\00 - personal\21 - phd\10 - classes\02 - major [fluid mech]\eml5930 - cfd\03 - project\cpp\cfd_solver_r13 (interface_independentpoints)\consoleapplication1\plotting.cpp(199): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+g:\00 - files\00 - personal\21 - phd\10 - classes\02 - major [fluid mech]\eml5930 - cfd\03 - project\cpp\cfd_solver_r13 (interface_independentpoints)\consoleapplication1\plotting.cpp(216): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+g:\00 - files\00 - personal\21 - phd\10 - classes\02 - major [fluid mech]\eml5930 - cfd\03 - project\cpp\cfd_solver_r13 (interface_independentpoints)\consoleapplication1\plotting.cpp(113): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  c:\program files (x86)\windows kits\10\include\10.0.15063.0\ucrt\stdio.h(1772): note: see declaration of 'sprintf'
+  ImmersedBoundaryOperators.cpp
+  CFD_Project.cpp
+g:\00 - files\00 - personal\21 - phd\10 - classes\02 - major [fluid mech]\eml5930 - cfd\03 - project\cpp\cfd_solver_r13 (interface_independentpoints)\consoleapplication1\cfd_project.cpp(175): warning C4101: 'B': unreferenced local variable
+  Body.cpp
+g:\00 - files\00 - personal\21 - phd\10 - classes\02 - major [fluid mech]\eml5930 - cfd\03 - project\cpp\cfd_solver_r13 (interface_independentpoints)\consoleapplication1\body.cpp(15): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
+  BC_2D.cpp
+g:\00 - files\00 - personal\21 - phd\10 - classes\02 - major [fluid mech]\eml5930 - cfd\03 - project\cpp\cfd_solver_r13 (interface_independentpoints)\consoleapplication1\bc_2d.cpp(307): warning C4101: 'ddx': unreferenced local variable
+  Generating Code...
+  ConsoleApplication1.vcxproj -> G:\00 - Files\00 - Personal\21 - PhD\10 - Classes\02 - Major [Fluid Mech]\EML5930 - CFD\03 - Project\Cpp\CFD_Solver_R13 (Interface_IndependentPoints)\x64\Debug\CFDSolver.exe
+  ConsoleApplication1.vcxproj -> G:\00 - Files\00 - Personal\21 - PhD\10 - Classes\02 - Major [Fluid Mech]\EML5930 - CFD\03 - Project\Cpp\CFD_Solver_R13 (Interface_IndependentPoints)\x64\Debug\CFDSolver.pdb (Partial PDB)

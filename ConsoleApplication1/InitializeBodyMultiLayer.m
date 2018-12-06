@@ -1,5 +1,15 @@
 clear; clc; close all;
 
+%%
+%This code creates a file 'Body.mat' that contains arrays with the
+%coordinates of the points of the bodies in the flow.
+%The input is a DXF file that contains the lines that constitute the body
+%boundaries.
+%For multiple bodies, use multiple layers in the DXF.
+
+%Velocity and trajectories need to be coded here in the next section of the
+%code!
+
 load('Initialization.mat');
 
 [f,p]=uigetfile('*.dxf','Please select a drawing file');
@@ -37,6 +47,7 @@ for i=1:size(Circles,1)
         ns=ns+1;
         xP(ns)=xCenter + r*cos(theta(j));
         yP(ns)=yCenter + r*sin(theta(j));
+        Layers{ns}=CirclesLayers{i};
     end 
 end
 
@@ -59,6 +70,7 @@ for i=1:size(Arcs,1)
         ns=ns+1;
         xP(ns)=xCenter + r*cos(theta(j));
         yP(ns)=yCenter + r*sin(theta(j));
+        Layers{ns}=ArcsLayers{i};
     end 
 end
 
@@ -79,27 +91,32 @@ for i=1:size(Lines,1)
         ns=ns+1;
         xP(ns)=x0 + (x1-x0)*segments(j);
         yP(ns)=y0 + (y1-y0)*segments(j);
+        Layers{ns}=LinesLayers{i};
     end 
 end
 
 
-for i=1:(size(Polylines,1)-1)
+for k=1:size(c_Poly,1)
     %Generates Polylines
-    x0=Polylines(i,1);
-    y0=Polylines(i,2);
-    
-    x1=Polylines(i+1,1);
-    y1=Polylines(i+1,2);
-    
-    lineLength=sqrt((x1-x0)^2 + (y1-y0)^2);
-    nSegments=ceil(lineLength/ds);
-    segments=linspace(0, 1, nSegments);
-    
-    for j=1:length(segments)
-        ns=ns+1;
-        xP(ns)=x0 + (x1-x0)*segments(j);
-        yP(ns)=y0 + (y1-y0)*segments(j);
-    end 
+    Poly=c_Poly{k,1};
+    for i=1:(size(Poly,1)-1)
+        x0=Polylines(i,1);
+        y0=Polylines(i,2);
+
+        x1=Polylines(i+1,1);
+        y1=Polylines(i+1,2);
+
+        lineLength=sqrt((x1-x0)^2 + (y1-y0)^2);
+        nSegments=ceil(lineLength/ds);
+        segments=linspace(0, 1, nSegments);
+
+        for j=1:length(segments)
+            ns=ns+1;
+            xP(ns)=x0 + (x1-x0)*segments(j);
+            yP(ns)=y0 + (y1-y0)*segments(j);
+            Layers{ns}=c_Poly{k,2};
+        end 
+    end
 end
 
 %First point will be used as model center
@@ -126,6 +143,7 @@ for i=1:size(tooClose,1)
         tooClose(:,i)=0;
         xP(i)=nan;
         yP(i)=nan;
+        Layers{i}=[];
     end
 end
 
@@ -135,34 +153,78 @@ Ly=dy*ny;
 padX=2*dx;
 padY=2*dy;
 
-yP(xP<padX)=nan; xP(xP<padX)=nan; %Left bound
-yP(xP>(Lx-padX))=nan; xP(xP>(Lx-padX))=nan; %Right bound
-xP(yP<padY)=nan; yP(yP<padY)=nan; %Bottom bound
-xP(yP>(Ly-padY))=nan; yP(yP>(Ly-padY))=nan; %Bottom bound
+yP(xP<padX)=nan; Layers(xP<padX)=cell(1,sum(xP<padX)); xP(xP<padX)=nan; %Left bound
+yP(xP>(Lx-padX))=nan; Layers(xP>(Lx-padX))=cell(1,sum(xP>(Lx-padX))); xP(xP>(Lx-padX))=nan; %Right bound
+xP(yP<padY)=nan; Layers(yP<padY)=cell(1,sum(yP<padY)); yP(yP<padY)=nan; %Bottom bound
+xP(yP>(Ly-padY))=nan; Layers(yP>(Ly-padY))=cell(1,sum(yP>(Ly-padY))); yP(yP>(Ly-padY))=nan; %Bottom bound
 
 %Actually removes the points here (nans)
 yP=yP(~isnan(xP));
 xP=xP(~isnan(xP));
+Layers = Layers(~cellfun('isempty',Layers));
 ns=length(xP);
 
-%Plots the points
-plot(xP,yP,'k.');
-hold on;
-plot([0 Lx Lx 0 0], [0 0 Ly Ly 0],'b:');
-plot(xC,yC,'b*');
-daspect([1 1 1]);
+UniqueLayers=unique(Layers); %For object selection
 
 
+
+%%
+%=================TRAJECTORY CODING=====================
 %Creates a trajectory for the points
 time=dt*((1:last_t)-1);
 time=repmat(time,ns,1);
 
-xTraj=time*0.1;
-yTraj=time*0.2;
+xTraj=time*0;%Inits
+yTraj=time*0;%Inits
+
+%Each layer can have its own trajectory
+%=======Layer 0========
+i=1; %First object
+currentLayer = strcmp(Layers,UniqueLayers{i});
+xTraj(currentLayer,:)=0;
+yTraj(currentLayer,:)=0;
+
+%=======Layer 1========
+i=2; %Second object
+currentLayer = strcmp(Layers,UniqueLayers{i});
+xTraj(currentLayer,:)=0.5*sin(2*pi*0.05*time(currentLayer,:)); %Moves piston back and forth
+yTraj(currentLayer,:)=0;
 
 
 %saves the data as a mat file
 save('Body.mat','xP','yP','xC','yC','xTraj','yTraj', 'ns', 'ds');
 disp('saved!')
+
+
+
+%%
+%Extras!
+%Calculates vx and vy maxima (just for my information)
+vx=(xTraj(:,2:end)-xTraj(:,1:end-1))/dt;
+vy=(yTraj(:,2:end)-yTraj(:,1:end-1))/dt;
+
+vxMax=max(vx(:))
+vyMax=max(vy(:))
+
+%=======================================================================
+%Plots the points
+colors={'k.','b.','r.','g.','k*','b*','r*','g*'};
+
+figure; 
+for t_idx=1:100:last_t
+    cla; hold on;
+    for i=1:length(UniqueLayers)
+        currentLayer = strcmp(Layers,UniqueLayers{i});
+        plot(xP(currentLayer) + xTraj(currentLayer,t_idx),yP(currentLayer) + yTraj(currentLayer,t_idx),colors{i});
+        daspect([1 1 1]);
+    end
+    plot([0 Lx Lx 0 0], [0 0 Ly Ly 0],'b:');
+    plot(xC,yC,'b*');
+    hold off;
+    drawnow;
+    
+    pause(0.1)
+end
+
 
 

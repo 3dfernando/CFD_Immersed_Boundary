@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "SolverOperators.h"
 
+#define Inverse_Order 1 //2 uses inverse definition with L². 1 truncates to L.
+
 //Global variables are useful here because these functions get called many times. Therefore reallocation is not necessary because the variables are overwritten.
 
 //Global variables for SolveIntermVelocity2D
@@ -178,19 +180,29 @@ void SolverOperators::R_Operator_Inv(double *u, double *v, double *res_u, double
 
 	//Gets result from Laplace
 	LaplaceOperator2D(u, v, Lu, Lv, dx, dy, nx, ny);
+#if Inverse_Order == 2
 	LaplaceOperator2D(Lu, Lv, Lu2, Lv2, dx, dy, nx, ny);
+#endif
 
 
 	//Forms the Rinv matrix:
 	dtOver2Re = (dt / (2 * Re));
 	for (int j = 0; j < ny; j++) {
 		for (int i = 0; i < (nx - 1); i++) {
+#if Inverse_Order == 1
+			res_u[j * (nx - 1) + i] = u[j * (nx - 1) + i] + dtOver2Re * Lu[j * (nx - 1) + i];
+#elif Inverse_Order == 2
 			res_u[j * (nx - 1) + i] = u[j * (nx - 1) + i] + dtOver2Re * Lu[j * (nx - 1) + i] + dtOver2Re * dtOver2Re * Lu2[j * (nx - 1) + i];
+#endif
 		}
 	}
 	for (int j = 0; j < (ny - 1); j++) {
 		for (int i = 0; i < nx; i++) {
+#if Inverse_Order == 1
+			res_v[j * nx + i] = v[j * nx + i] + dtOver2Re * Lv[j * nx + i];
+#elif Inverse_Order == 2
 			res_v[j * nx + i] = v[j * nx + i] + dtOver2Re * Lv[j * nx + i] + dtOver2Re * dtOver2Re * Lv2[j * nx + i];
+#endif
 		}
 	}
 
@@ -332,35 +344,6 @@ void SolverOperators::CGMomentum2D(void (*A_Fn) (double *u, double *v, double *r
 			}
 		}
 
-		//Does not update the residuals (not needed)
-		/*if ((iter % 50) == 1) {
-			//Updates residual by applying function
-			A_Fn(uResult, vResult, uTemp, vTemp, Re, dx, dy, dt, nx, ny);
-			for (int j = 0; j < ny; j++) {
-				for (int i = 0; i < (nx - 1); i++) {
-					r_u[j * (nx - 1) + i] = ru[j * (nx - 1) + i] - uTemp[j * (nx - 1) + i];
-				}
-			}
-			for (int j = 0; j < (ny - 1); j++) {
-				for (int i = 0; i < nx; i++) {
-					r_v[j * nx + i] = rv[j * nx + i] - vTemp[j * nx + i];
-				}
-			}			
-		}
-		else
-		{
-			//Quick formula to update the residuals
-			for (int j = 0; j < ny; j++) {
-				for (int i = 0; i < (nx - 1); i++) {
-					r_u[j * (nx - 1) + i] = r_u[j * (nx - 1) + i] - alpha * uTemp[j * (nx - 1) + i];
-				}
-			}
-			for (int j = 0; j < (ny - 1); j++) {
-				for (int i = 0; i < nx; i++) {
-					r_v[j * nx + i] = r_v[j * nx + i] - alpha * vTemp[j * nx + i];
-				}
-			}			
-		}*/
 		
 		//Quick formula to update the residuals
 		for (int j = 0; j < ny; j++) {
